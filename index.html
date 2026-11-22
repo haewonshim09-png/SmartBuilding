@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스마트 빌딩 시뮬레이터</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: #5ea5dc;
+  color: #26343c;
+  font-family: Arial, sans-serif;
+}
+
+.app {
+  width: min(100%, 1050px);
+  aspect-ratio: 1 / 1;
+  min-height: 750px;
+  margin: auto;
+  padding: 26px;
+  background: #f8fafb;
+  border-radius: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  box-shadow: 0 8px 30px #00000012;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dce3e7;
+  padding-bottom: 12px;
+}
+
+header h1 {
+  font-size: 22px;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+header span {
+  color: #82919a;
+  font-size: 11px;
+}
+
+.mode-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-button {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #dce3e7;
+  border-radius: 0px;
+  background: white;
+  color: #60727b;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.mode-button.active.smart {
+  background: #2c9fcd;
+  border-color: #2c9fcd;
+  color: white;
+}
+
+.mode-button.active.normal {
+  background: #8b969c;
+  border-color: #8b969c;
+  color: white;
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #e1e7ea;
+  border-radius: 0px;
+  padding: 16px;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.panel h2 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: #8b989f;
+  margin: -5px 0 15px;
+}
+
+.building-area {
+  height: calc(100% - 40px);
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f3f6f7;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.direction {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  color: #84949c;
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+
+.house {
+  width: 90%;
+  max-width: 330px;
+  height: 280px;
+  background: #e5ebee;
+  border: 3px solid #82939d;
+  display: flex;
+  flex-direction: column;
+}
+
+.roof {
+  height: 25px;
+  background: #82939d;
+  border-bottom: 3px solid #687b86;
+  cursor: pointer;
+}
+
+.top-window {
+  height: 30px;
+  margin: 7px 15%;
+  background: #b6dce9;
+  border: 2px solid #6e9eaf;
+  cursor: pointer;
+}
+
+.rooms {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 5px 10px;
+}
+
+.room {
+  background: #d5e0e5;
+  border: 2px solid #a2b2ba;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 11px;
+  color: #536873;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.room:hover, .room.selected {
+  outline: 3px solid #7ba9bd;
+}
+
+.room.disabled {
+  opacity: .3;
+  background: #cbd2d5;
+}
+
+.atrium {
+  background: #d8edf1;
+  border-color: #78aab9;
+}
+
+.window {
+  height: 28px;
+  margin: 0 15%;
+  background: #a9d6e6;
+  border: 2px solid #6e9eaf;
+  cursor: pointer;
+}
+
+.shading {
+  height: 9px;
+  background: #b3a58b;
+  margin: 0 10%;
+  cursor: pointer;
+}
+
+.building-label {
+  font-size: 10px;
+  color: #84949c;
+  margin-top: 12px;
+}
+
+.setting {
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.setting-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.setting strong {
+  font-size: 12px;
+}
+
+.setting small {
+  display: block;
+  font-size: 10px;
+  color: #87949a;
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+input[type="checkbox"] {
+  accent-color: #36a4d7;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #3c9cc9;
+  margin-top: 8px;
+}
+
+.range-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #87949a;
+}
+
+.apply {
+  width: 100%;
+  padding: 12px;
+  background: #3398cb;
+  border: none;
+  border-radius: 0px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 13px;
+}
+
+.apply:hover {
+  background: #456d80;
+}
+
+.result {
+  background: #edf3f5;
+  border-radius: 0px;
+  padding: 14px 16px;
+}
+
+.result h3 {
+  margin: 0 0 7px;
+  font-size: 13px;
+}
+
+.result p {
+  margin: 0;
+  font-size: 11px;
+  color: #71818a;
+  line-height: 1.6;
+}
+
+.comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.score-card {
+  padding: 12px;
+  border-radius: px;
+  background: white;
+  border: 1px solid #dce3e7;
+}
+
+.score-card span {
+  font-size: 11px;
+  color: #77858c;
+}
+
+.score-card strong {
+  display: block;
+  font-size: 25px;
+  margin-top: 5px;
+}
+
+.score-card small {
+  font-size: 10px;
+  color: #8b989f;
+}
+
+footer {
+  font-size: 9px;
+  color: #9aa5aa;
+  text-align: center;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  body { padding: 8px; }
+  .app {
+    aspect-ratio: auto;
+    min-height: 0;
+    padding: 14px;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .building-area { min-height: 390px; }
+  .panel { overflow: visible; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+  <h1>스마트 빌딩</h1>
+  <span>에너지를 절약해요~</span>
+</header>
+
+<!-- 설계 유형 선택 -->
+<div class="mode-bar">
+  <button class="mode-button active smart"
+          id="smartButton"
+          onclick="changeMode('smart')">
+    스마트 디자인
+  </button>
+  <button class="mode-button normal"
+          id="normalButton"
+          onclick="changeMode('normal')">
+    일반 디자인
+  </button>
+</div>
+
+<div class="workspace">
+
+  <!-- 건물 모형 -->
+  <section class="panel">
+    <h2>*건물 모형</h2>
+
+    <div class="building-area">
+      <div class="direction">
+        <span>북향 ↑</span>
+        <span>남향 ↓</span>
+      </div>
+
+      <div class="house">
+        <div class="roof" id="roofModel"
+             onclick="showElement('roof')"></div>
+
+        <div class="top-window" id="topWindow"
+             onclick="showElement('ventilation')"></div>
+
+        <div class="rooms">
+          <div class="room" id="northWall"
+               onclick="showElement('northWall')">
+            북측 외벽
+          </div>
+
+          <div class="room atrium" id="atrium"
+               onclick="showElement('atrium')">
+            중앙<br>아트리움
+          </div>
+
+          <div class="room" id="classroom"
+               onclick="showElement('classroom')">
+            교실
+          </div>
+
+          <div class="room" id="learning"
+               onclick="showElement('learning')">
+            학습 공간
+          </div>
+        </div>
+
+        <div class="shading" id="shading"
+             onclick="showElement('shading')"></div>
+
+        <div class="window" id="southWindow"
+             onclick="showElement('southWindow')"></div>
+      </div>
+
+      <div class="building-label">
+        건물 요소를 클릭하여 상세 정보 확인
+      </div>
+    </div>
+  </section>
+
+  <!-- 설계 설정 -->
+  <section class="panel">
+    <h2>*디자인 설정</h2>
+    <p class="subtitle" id="settingSubtitle">
+      스마트 설계의 건축 소재 및 조건
+    </p>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>남향 대형 창</strong>
+        <input type="checkbox" id="southCheck" checked>
+      </div>
+      <small id="southMaterial"></small>
+      <input type="range" id="windowSize" min="1" max="3" value="2">
+      <div class="range-label"><span>작게</span><span>중간</span><span>크게</span></div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>남향 차양(처마)</strong>
+        <input type="checkbox" id="shadeCheck" checked>
+      </div>
+      <small id="shadeMaterial"></small>
+      <input type="range" id="shadeSize" min="1" max="3" value="2">
+      <div class="range-label"><span>짧게</span><span>중간</span><span>길게</span></div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>중앙 아트리움 유리 지붕</strong>
+        <input type="checkbox" id="atriumCheck" checked>
+      </div>
+      <small id="atriumMaterial"></small>
+    </div>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>상부 환기창</strong>
+        <input type="checkbox" id="ventCheck" checked>
+      </div>
+      <small id="ventMaterial"></small>
+      <input type="range" id="ventSize" min="1" max="3" value="2">
+      <div class="range-label"><span>작게</span><span>중간</span><span>크게</span></div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>교실·학습공간 외벽</strong>
+        <input type="checkbox" id="wallCheck" checked>
+      </div>
+      <small id="wallMaterial"></small>
+    </div>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>지붕</strong>
+        <input type="checkbox" id="roofCheck" checked>
+      </div>
+      <small id="roofMaterial"></small>
+    </div>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>북측 외벽</strong>
+        <input type="checkbox" id="northCheck" checked>
+      </div>
+      <small id="northMaterial"></small>
+    </div>
+
+    <div class="setting">
+      <div class="setting-top">
+        <strong>아트리움 내부 벽, 천장</strong>
+        <input type="checkbox" id="paintCheck" checked>
+      </div>
+      <small id="paintMaterial"></small>
+    </div>
+
+    <button class="apply" onclick="applyDesign()">
+      적용하기
+    </button>
+  </section>
+</div>
+
+<!-- 상세 결과 -->
+<section class="result">
+  <h3 id="resultTitle">결과</h3>
+  <p id="resultText">
+    설계를 적용하고 건물 모형의 각 요소를 클릭해 보세요.
+  </p>
+
+  <div class="score-card" style="grid-column: 1 / -1;">
+    <span id="currentModeLabel">현재 설계 · 스마트</span>
+    <strong id="currentScore">95</strong>
+    <small>현재 설정 기준 평가 점수</small>
+  </div>
+</div>
+
+</div>
+
+
+<footer>
+  이 점수는 제공된 설계 사양을 바탕으로 설정한 가상 비교 평가값이며,
+  실제 에너지 소비량이나 절감률을 측정한 결과가 아닙니다!!!!!!!
+</footer>
+
+</div>
+
+<script>
+
+const materials = {
+  smart: {
+    south: "아르곤 가스 충전 삼중 로이 유리",
+    shade: "불소수지 도장 알루미늄 패널",
+    atrium: "로이 코팅 복층 유리 또는 삼중 유리",
+    vent: "열교 차단 알루미늄 창틀 + 로이 복층유리 + EPDM 기밀 패킹",
+    wall: "암면 보드",
+    roof: "폴리이소시아누레이트(PIR) 단열 보드",
+    north: "암면 보드",
+    paint: "고반사 백색 수성 아크릴 도료"
+  },
+
+  normal: {
+    south: "투명 복층유리",
+    shade: "일반 알루미늄 패널",
+    atrium: "투명 복층유리",
+    vent: "일반 알루미늄 창틀 + 투명 복층유리",
+    wall: "비드법 발포 폴리스티렌(EPS) 단열재",
+    roof: "압출법 발포 폴리스티렌(XPS) 단열재",
+    north: "비드법 발포 폴리스티렌(EPS) 단열재",
+    paint: "일반 수성 아크릴 도료"
+  }
+};
+
+const scores = {
+  smart: {
+    south: 10,
+    shade: 8,
+    atrium: 10,
+    vent: 10,
+    wall: 12,
+    roof: 12,
+    north: 10,
+    paint: 8
+  },
+  normal: {
+    south: 6,
+    shade: 5,
+    atrium: 7,
+    vent: 5,
+    wall: 8,
+    roof: 8,
+    north: 8,
+    paint: 5
+  }
+};
+
+const elementInfo = {
+  southWindow: {
+    name: "남향 대형 창",
+    material: "south",
+    effect: "유리의 구성은 일사 유입과 열손실에 영향을 줍니다. 삼중 로이 유리는 일반 복층유리와 비교해 단열 및 일사 조절 측면에서 유리한 설계 요소입니다.."
+  },
+  shading: {
+    name: "남향 차양(처마)",
+    material: "shade",
+    effect: "차양은 여름철 직사광선을 조절하는 데 도움을 줍니다. 차양의 재료와 형태에 따라 내구성과 외부 환경에 대한 특성이 달라집니다."
+  },
+  atrium: {
+    name: "중앙 아트리움 유리 지붕",
+    material: "atrium",
+    effect: "아트리움 지붕의 유리 사양은 자연광 유입과 열 이동에 영향을 줍니다."
+  },
+  ventilation: {
+    name: "상부 환기창",
+    material: "vent",
+    effect: "상부 환기창은 따뜻한 공기가 위로 이동하는 특성을 활용한 자연 환기에 이용할 수 있습니다!"
+  },
+  classroom: {
+    name: "교실·학습공간 외벽",
+    material: "wall",
+    effect: "외벽 단열재는 실내외 온도 차이에 따른 열 이동을 줄이는 데 도움을 줍니다."
+  },
+  learning: {
+    name: "교실·학습공간 외벽",
+    material: "wall",
+    effect: "외벽 단열재는 실내외 온도 차이에 따른 열 이동을 줄이는 데 도움을 줍니다."
+  },
+  northWall: {
+    name: "북측 외벽",
+    material: "north",
+    effect: "북측 외벽의 단열은 외부와 실내 사이의 열 이동을 줄이는 데 도움을 줍니다.북측 외벽의 단열은 외부와 실내 사이의 열 이동을 줄이는 데 도움을 줍니다."
+  },
+  roof: {
+    name: "지붕",
+    material: "roof",
+    effect: "지붕 단열재는 외부 기온의 영향을 줄이고 실내 온도를 유지할 수 있습니다."
+  },
+  paint: {
+    name: "아트리움 내부 벽과 천장",
+    material: "paint",
+    effect: "밝은 색상의 고반사 도료는 빛을 반사해 내부의 자연광 활용에 도움을 줍니다."
+  }
+};
+
+let currentMode = "smart";
+let applied = false;
+
+const checkIds = {
+  south: "southCheck",
+  shade: "shadeCheck",
+  atrium: "atriumCheck",
+  vent: "ventCheck",
+  wall: "wallCheck",
+  roof: "roofCheck",
+  north: "northCheck",
+  paint: "paintCheck"
+};
+
+function isOn(id) {
+  return document.getElementById(id).checked;
+}
+
+function changeMode(mode) {
+  currentMode = mode;
+
+  document.getElementById("smartButton").classList.toggle(
+    "active", mode === "smart"
+  );
+  document.getElementById("normalButton").classList.toggle(
+    "active", mode === "normal"
+  );
+
+  document.getElementById("settingSubtitle").textContent =
+    mode === "smart" ? "스마트 설계의 건축 소재 및 조건" : "일반 설계의 건축 소재 및 조건";
+
+  Object.values(checkIds).forEach(id => {
+    document.getElementById(id).checked = true;
+  });
+
+  document.getElementById("windowSize").value = 2;
+  document.getElementById("shadeSize").value = 2;
+  document.getElementById("ventSize").value = 2;
+
+  updateMaterials();
+  applyDesign();
+
+  document.getElementById("resultTitle").textContent =
+    mode === "smart" ? "SMART DESIGN" : "GENERAL DESIGN";
+
+  document.getElementById("resultText").textContent =
+    mode === "smart"
+    ? "스마트 설계의 자재와 건축 요소가 적용되었습니다!!"
+    : "일반 설계의 자재와 건축 요소가 적용되었습니다!!!";
+}
+
+function updateMaterials() {
+  const data = materials[currentMode];
+
+  document.getElementById("southMaterial").textContent = data.south;
+  document.getElementById("shadeMaterial").textContent = data.shade;
+  document.getElementById("atriumMaterial").textContent = data.atrium;
+  document.getElementById("ventMaterial").textContent = data.vent;
+  document.getElementById("wallMaterial").textContent = data.wall;
+  document.getElementById("roofMaterial").textContent = data.roof;
+  document.getElementById("northMaterial").textContent = data.north;
+  document.getElementById("paintMaterial").textContent = data.paint;
+}
+
+function applyDesign() {
+  const south = isOn("southCheck");
+  const shade = isOn("shadeCheck");
+  const atrium = isOn("atriumCheck");
+  const vent = isOn("ventCheck");
+  const wall = isOn("wallCheck");
+  const roof = isOn("roofCheck");
+  const north = isOn("northCheck");
+  const paint = isOn("paintCheck");
+
+  document.getElementById("southWindow").style.display =
+    south ? "block" : "none";
+
+  document.getElementById("shading").style.display =
+    shade ? "block" : "none";
+
+  document.getElementById("atrium").classList.toggle(
+    "disabled", !atrium
+  );
+
+  document.getElementById("topWindow").style.display =
+    vent ? "block" : "none";
+
+  document.getElementById("classroom").classList.toggle(
+    "disabled", !wall
+  );
+
+  document.getElementById("learning").classList.toggle(
+    "disabled", !wall
+  );
+
+  document.getElementById("northWall").classList.toggle(
+    "disabled", !north
+  );
+
+  document.getElementById("roofModel").style.opacity =
+    roof ? "1" : "0.25";
+
+  document.getElementById("atrium").style.background =
+    paint && atrium ? "#d8edf1" : "#d5e0e5";
+
+  document.getElementById("southWindow").style.height =
+    (document.getElementById("windowSize").value * 14) + "px";
+
+  document.getElementById("shading").style.margin =
+    "0 " + (25 - document.getElementById("shadeSize").value * 5) + "%";
+
+  document.getElementById("topWindow").style.height =
+    (document.getElementById("ventSize").value * 14) + "px";
+
+  applied = true;
+  calculateScore();
+}
+
+function calculateModeScore(mode) {
+  let total = 0;
+
+  Object.keys(checkIds).forEach(key => {
+    if (isOn(checkIds[key])) {
+      total += scores[mode][key];
+    }
+  });
+
+  return total;
+}
+
+function calculateScore() {
+
+  const currentBase = calculateModeScore(currentMode);
+  const sliderScore = calculateSliderScore();
+
+  const current = currentBase + sliderScore;
+
+  document.getElementById("currentScore").textContent = current;
+
+  document.getElementById("currentModeLabel").textContent =
+    currentMode === "smart"
+      ? "현재 설계 · 스마트"
+      : "현재 설계 · 일반";
+}
+
+function calculateSliderScore() {
+  let total = 0;
+
+  const sliderSettings = [
+    { id: "windowSize", check: "southCheck" },
+    { id: "shadeSize", check: "shadeCheck" },
+    { id: "ventSize", check: "ventCheck" }
+  ];
+
+  sliderSettings.forEach(item => {
+    if (!isOn(item.check)) return;
+
+    const value = Number(
+      document.getElementById(item.id).value
+    );
+
+    // 중간값일 때 5점, 양 끝값일 때 2점
+    total += value === 2 ? 5 : 2;
+  });
+
+  return total;
+}
+
+function showElement(key) {
+  if (!applied) return;
+
+  const item = elementInfo[key];
+  if (!item) return;
+
+  const enabled = isOn(checkIds[item.material]);
+  const material = materials[currentMode][item.material];
+  const score = enabled ? scores[currentMode][item.material] : 0;
+
+  document.getElementById("resultTitle").textContent =
+    item.name;
+
+  document.getElementById("resultText").textContent =
+    "현재 재료: " + material +
+    " / " + (enabled ? item.effect : "이 설계 요소는 비활성화되어 있습니다!") +
+    " / 가상 평가 점수: " + score + "점";
+}
+
+updateMaterials();
+applyDesign();
+
+</script>
+</body>
+</html>
